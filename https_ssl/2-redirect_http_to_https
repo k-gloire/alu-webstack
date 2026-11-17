@@ -1,0 +1,24 @@
+global
+    maxconn 2048
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+frontend http_front
+    bind *:80
+    http-request redirect scheme https code 301 unless { ssl_fc }
+
+frontend https_front
+    bind *:443 ssl crt /etc/haproxy/certs/www.DOMAIN.pem
+    default_backend http_back
+
+backend http_back
+    balance roundrobin
+    server 7416-web-01 13.40.32.202:80 check
+    server 7416-web-02 35.178.172.14:80 check
