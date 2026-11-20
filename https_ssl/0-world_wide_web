@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
-# Displays information about the DNS records of subdomains of a domain
-# shellcheck disable=SC2086
-show_info() {
-    dig "$2.$1" | grep -A1 'ANSWER SECTION:' | tail -1 | awk -v sub="$2" '{print "The subdomain " sub " is a " $4 " record and points to " $5}'
+# Displays DNS record information for specified subdomains of a domain
+
+check_subdomain() {
+	local sub="$1"
+	local domain="$2"
+	local output
+	output=$(dig +noall +answer "${sub}.${domain}" | awk '$4 == "A" || $4 == "CNAME" {print $4, $5; exit}')
+	local record_type
+	local destination
+	record_type=$(echo "$output" | awk '{print $1}')
+	destination=$(echo "$output" | awk '{print $2}')
+	echo "The subdomain ${sub} is a ${record_type} record and points to ${destination}"
 }
-if [ -n "$2" ]; then
-    show_info "$1" "$2"
-else
-    for sub in www lb-01 web-01 web-02; do
-        show_info "$1" "$sub"
-    done
+
+if [ $# -eq 1 ]; then
+	for sub in www lb-01 web-01 web-02; do
+		check_subdomain "$sub" "$1"
+	done
+elif [ $# -eq 2 ]; then
+	check_subdomain "$2" "$1"
 fi
